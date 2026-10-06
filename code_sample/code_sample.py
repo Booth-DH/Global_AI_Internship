@@ -54,7 +54,7 @@ print(comparison.round(3).rename_axis(None))
 # %% Drawing the associations
 def plot_correlations(correlations):
     ranked = correlations.sort_values('DIABETES', ascending=False).rename(index=factor_labels)
-    fig, axes = plt.subplots(1, 2, figsize=(5.6, 1.45))
+    fig, axes = plt.subplots(1, 2, figsize=(5.6, 1.55))
     for ax, start in zip(axes, [0, 8]):
         ranked.iloc[start:start + 8].iloc[::-1].plot.barh(ax=ax, width=.8,
             color=['#176b87', '#cd743b'], legend=False, fontsize=8)
@@ -88,7 +88,7 @@ print(summary.round(3).rename_axis(None).to_string())
 
 # %% Mapping the profiles
 def plot_county_profiles(complete):
-    colors = dict(zip([*tiers, 'Not clustered'], ['#27ae60', '#f39c12', '#e67e22', '#c0392b', '#d3d3d3']))
+    colors = dict(zip([*tiers, 'Not clustered'], ['#deebf7', '#9ecae1', '#4292c6', '#08519c', '#d3d3d3']))
     lookup = complete.tier.astype('string').map(colors).to_dict()
     geo = json.loads((ROOT / 'data/processed/us_counties.geojson').read_text())
     fig, ax = plt.subplots(figsize=(5.6, 1.8))
