@@ -88,7 +88,7 @@ print(summary.round(3).rename_axis(None).to_string())
 
 # %% Mapping the profiles
 def plot_county_profiles(complete):
-    colors = dict(zip([*tiers, 'Not clustered'], ['#deebf7', '#9ecae1', '#4292c6', '#08519c', '#d3d3d3']))
+    colors = dict(zip([*tiers, 'Not clustered'], ['#c6dbef', '#6baed6', '#2171b5', '#08306b', '#a6a6a6']))
     lookup = complete.tier.astype('string').map(colors).to_dict()
     geo = json.loads((ROOT / 'data/processed/us_counties.geojson').read_text())
     fig, ax = plt.subplots(figsize=(5.6, 1.8))
@@ -99,7 +99,7 @@ def plot_county_profiles(complete):
         polygons = [geometry['coordinates']] if geometry['type'] == 'Polygon' else geometry['coordinates']
         for polygon in polygons:
             shape = MplPath.make_compound_path(*[MplPath(ring, closed=True) for ring in polygon])
-            ax.add_patch(PathPatch(shape, facecolor=lookup.get(fips, '#d3d3d3'), edgecolor='w', lw=.12))
+            ax.add_patch(PathPatch(shape, facecolor=lookup.get(fips, '#a6a6a6'), edgecolor='w', lw=.12))
     ax.set(xlim=(-125, -66), ylim=(24, 50), aspect=1.25)
     ax.set_title('County profiles', fontsize=9)
     colors['Not clustered (measures unavailable)'] = colors.pop('Not clustered')
