@@ -1,74 +1,62 @@
 # County Health and Social Vulnerability
-**Donghang Zou · Global AI Internship**
 
-How do social conditions accompany diabetes and hypertension across U.S. counties, and what patterns emerge when counties are grouped by disease burden and vulnerability? This project brings together CDC PLACES and the CDC Social Vulnerability Index (SVI) to explore those questions through data preparation, correlation analysis, clustering, and maps.
+This Global AI internship project examines how county-level social conditions accompany diabetes and hypertension. It combines five CDC PLACES releases from 2021 to 2025 with CDC SVI 2020 and 2022, compares associations, and maps descriptive county profiles.
 
-Start with [the full analysis notebook](assignment.ipynb) for the step-by-step investigation, or [the executed code sample](code_sample/code_sample.ipynb) for a compact walkthrough of the latest snapshot. Both include explanations and computed output. A [two-page PDF excerpt](code_sample/code_sample.pdf) presents the latest-snapshot code, results, and county map. The [sample notes](code_sample/README.md) describe its scope and how to reproduce it.
+Read the [full analysis](notebooks/county_health_analysis.ipynb) for the investigation or the [two-page code sample](code_sample/code_sample.pdf) for a compact account with executed code and output.
 
-## Data and approach
+## Structure
 
-| Input | Use in the analysis |
-|---|---|
-| CDC PLACES releases 2021–2025 | County estimates of chronic disease, health behaviors, access, and social needs |
-| CDC/ATSDR SVI 2020 and 2022 | Overall social vulnerability and four theme rankings |
-| Cached county GeoJSON | County boundaries for interactive and static maps |
-
-The full notebook stacks five release snapshots into a 15,341-row county panel. Its 2019–2023 snapshot labels refer to each release's newest measurement year, rather than the year of every variable. SVI 2020 is paired with releases 2021–2022 and SVI 2022 with releases 2023–2025. The latest cross-section uses the **2025 PLACES release**, with disease outcomes from 2023, some measures from 2022, and SVI 2022. The cached 2020 PLACES file is examined during exploration but excluded from the FIPS join because it lacks county identifiers.
-
-Preparation preserves five-character FIPS identifiers, removes national aggregates, retains suppressed estimates as missing, replaces SVI's −999 placeholders, and checks one-to-one county joins. Age-adjusted prevalence is preferred to reduce differences arising from county age structures. The full notebook records measurement years and audits coverage before interpreting results.
-
-Pearson correlations are calculated for diabetes and hypertension. A reusable sampling comparison then asks how those associations change when every factor is evaluated on the same counties. For clustering, both outcomes and factors with mean absolute correlation of at least 0.40 across the two outcomes are standardized before fitting K-Means. Four profiles are ordered using their standardized diabetes, hypertension, and overall SVI centers.
-
-## Findings from the latest snapshot
-
-There are **2,956 counties** with both disease outcomes and overall SVI. Food insecurity, housing insecurity, and transportation barriers have the strongest positive associations with diabetes among the factors examined: **r = 0.937, 0.921, and 0.914**, respectively, each using 2,299 counties.
-
-Physical inactivity illustrates why the sample matters: its diabetes correlation is **0.873 across 2,956 counties**, falling to **0.850 on the common 2,299-county sample** used by these four factors. The ordering remains the same, but the comparison shows how geographic coverage affects the magnitudes.
-
-The 16-feature clustering retains **2,299 counties**, with the following unweighted county means:
-
-| Profile | Counties | Diabetes (%) | Hypertension (%) | Overall SVI |
-|---|---:|---:|---:|---:|
-| Low | 765 | 9.09 | 29.76 | 0.190 |
-| Moderate | 788 | 10.77 | 33.31 | 0.456 |
-| High | 508 | 12.55 | 36.75 | 0.754 |
-| Highest | 238 | 15.79 | 42.94 | 0.895 |
-
-The excerpt calls the fourth profile Highest; the original notebook retains the label Critical for the same counties. Higher-burden profiles concentrate in the Deep South. The four-profile solution has a silhouette score of **0.203**, indicating substantial overlap; the notebook's K search gives a higher score for two clusters. Four groups provide descriptive detail, without establishing four naturally separate or clinically validated risk categories.
-
-![County profiles from the latest snapshot](code_sample/fig_risk_tier_map.png)
-
-Complete-case filtering excludes **657 counties (22.2%) across nine states** represented in the latest snapshot. Grey map areas have no matched profile. The static view excludes Alaska, Hawaii, and Puerto Rico; nine clustered Connecticut planning regions also lack matching geometry in the cached boundary file.
-
-These are county-level associations, not causal effects or individual risk estimates. Each county receives equal weight, so the summaries are not national prevalence estimates. Different measurement years, changing coverage, and the underlying small-area estimation methods also limit comparisons across releases.
-
-## Repository guide
-
-| Location | Contents |
-|---|---|
-| [assignment.ipynb](assignment.ipynb) | Full exploration, preparation, coverage checks, correlations, and clustering |
-| [raw_data/](raw_data/) | Cached PLACES and SVI source CSVs |
-| [processed_data/](processed_data/) | Merged panel, measurement-year provenance, and county boundaries |
-| [results/](results/) | Full-analysis figures, county assignments, coverage tables, and interactive maps |
-| [code_sample/](code_sample/) | Executed excerpt, Python script, two-page PDF, static figures, and result tables |
-| [ProgressReport/](ProgressReport/) | Historical internship progress reports and final write-up |
-
-The interactive [diabetes/SVI map](results/fig5_diabetes_svi_map.html) and [county-profile map](results/fig9_risk_tier_map.html) can be opened locally in a browser. Older output filenames ending in `2023` refer to the latest snapshot label, corresponding to the 2025 release.
-
-## Reproduce the analysis
-
-Use a Python environment with the following packages:
-
-```sh
-python -m pip install pandas numpy matplotlib seaborn scikit-learn scipy requests folium branca jupyter nbformat nbclient ipykernel
+```text
+requirements.txt
+notebooks/
+  county_health_analysis.ipynb
+data/
+  raw/
+  processed/
+outputs/
+  figures/
+  maps/
+  tables/
+reports/
+  progress/
+  final_report.html
+  correlation_analysis.pdf
+  policy_brief/
+code_sample/
+  code_sample.pdf
+  code_sample.ipynb
+  code_sample.py
+  figures/
+  tables/
+  build/
 ```
 
-Open `assignment.ipynb` with that environment and run all cells from the repository root. Source CSVs and county boundaries are already cached. Running the full notebook regenerates the processed panel and files in `results/`.
+The data folders contain cached source files, the merged county panel, measurement-year records, and county boundaries. Outputs contain the full notebook's results. Reports preserve internship write-ups; the policy brief folder contains both the LaTeX brief and the earlier internship health brief.
 
-To run only the compact latest-snapshot analysis, which writes into `code_sample/`, use:
+## Run
+
+From the repository root, install the dependencies and execute the full analysis:
 
 ```sh
-python code_sample/code_sample.py
+python -m pip install -r requirements.txt
+jupyter nbconvert --execute --inplace --to notebook notebooks/county_health_analysis.ipynb
 ```
 
-The executed excerpt notebook can also be rerun from a fresh kernel. Its figures and result tables are generated by the accompanying script, while the PDF selects the analytical code and output into two pages. See [the sample notes](code_sample/README.md) for the tested environment and interpretation of the map's missing counties.
+The notebook resolves the repository root whether launched there or inside `notebooks/`. It reads cached inputs and regenerates processed tables, figures, and interactive maps. Open the HTML files under `outputs/maps/` locally in a browser.
+
+To regenerate the sample notebook, run its checks, and rebuild the PDF:
+
+```sh
+python code_sample/build/build_notebook.py
+python code_sample/build/export_pdf.py
+```
+
+The [sample README](code_sample/README.md) explains the excerpt and its outputs.
+
+## Main findings
+
+In the latest snapshot, food insecurity, housing insecurity, and transportation barriers have diabetes correlations of 0.937, 0.921, and 0.914. Physical inactivity's correlation changes from 0.873 on 2,956 counties to 0.850 on the 2,299-county common sample.
+
+The four profiles contain 765, 788, 508, and 238 counties. The sample calls the highest-burden profile Highest; the full analysis retains its original Critical label. Assignments are identical. The silhouette score is 0.203, so these are overlapping descriptive profiles, not validated clinical categories.
+
+These are associations rather than causal effects or individual risk estimates. County means are unweighted, measurement years vary, and missing measures affect coverage. The latest PLACES release is from 2025, with 2022/2023 measurement years and SVI 2022. Complete-case clustering excludes 657 counties from the initial sample, while KY and PA lack the disease outcomes needed to enter it.

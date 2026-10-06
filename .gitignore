@@ -1,3 +1,22 @@
+# Operating-system and local editor files
 .DS_Store
 .Rhistory
 .claude/settings.local.json
+
+# Python and Jupyter runtime files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+
+# LaTeX intermediates
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
+# Local sample verification and previews
+code_sample/_validation/
+code_sample/pdf_preview/
+code_sample/pdf_source.py
