@@ -3,7 +3,7 @@
 
 How do social conditions accompany diabetes and hypertension across U.S. counties, and what patterns emerge when counties are grouped by disease burden and vulnerability? This project brings together CDC PLACES and the CDC Social Vulnerability Index (SVI) to explore those questions through data preparation, correlation analysis, clustering, and maps.
 
-Start with [the full analysis notebook](assignment.ipynb) for the step-by-step investigation, or [the executed code sample](code_sample/code_sample.ipynb) for a compact walkthrough of the latest snapshot. Both include explanations and computed output. The [sample notes](code_sample/README.md) describe its scope and how to reproduce it.
+Start with [the full analysis notebook](assignment.ipynb) for the step-by-step investigation, or [the executed code sample](code_sample/code_sample.ipynb) for a compact walkthrough of the latest snapshot. Both include explanations and computed output. A [two-page PDF excerpt](code_sample/code_sample.pdf) presents the latest-snapshot code, results, and county map. The [sample notes](code_sample/README.md) describe its scope and how to reproduce it.
 
 ## Data and approach
 

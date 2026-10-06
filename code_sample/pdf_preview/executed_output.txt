@@ -1,0 +1,15 @@
+2,956 counties; pairwise r / n; common_r and common_n for diabetes:
+            DIABETES  BPHIGH     n  common_r  common_n
+factor                                                
+FOODINSECU     0.937   0.838  2299     0.937      2299
+HOUSINSECU     0.921   0.816  2299     0.921      2299
+LACKTRPT       0.914   0.816  2299     0.914      2299
+LPA            0.873   0.810  2956     0.850      2299
+
+16 features; 2,299/2,956 counties; K=4 silhouette = 0.203
+          counties  diabetes  hypertension    SVI
+tier                                             
+Low            765     9.090        29.758  0.190
+Moderate       788    10.765        33.306  0.456
+High           508    12.555        36.755  0.754
+Critical       238    15.786        42.943  0.895

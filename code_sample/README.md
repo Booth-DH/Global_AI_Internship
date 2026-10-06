@@ -1,6 +1,6 @@
 # County health analysis: a compact walkthrough
 
-[Open the executed notebook](code_sample.ipynb) to follow the latest snapshot from raw county CSVs to correlations and mapped profiles. The accompanying [Python script](code_sample.py) contains the same analysis. Short explanations retain the full notebook's step-by-step style, including the decisions that affect interpretation.
+[Open the two-page PDF](code_sample.pdf), or [the executed notebook](code_sample.ipynb) to follow the latest snapshot from raw county CSVs to correlations and mapped profiles. The accompanying [Python script](code_sample.py) contains the same analysis. Short explanations retain the full notebook's step-by-step style, including the decisions that affect interpretation.
 
 The full project compares five CDC PLACES releases. This excerpt focuses on the **2025 release and SVI 2022**, preserving the original analytical rules while keeping the pipeline in six executable code cells.
 
@@ -26,12 +26,15 @@ The findings describe county-level associations rather than causal relationships
 
 The latest-release preparation, sampling comparison, feature selection, and clustering reproduce the full analysis. Multi-release charts, extensive schema exploration, the full K search, and interactive map controls remain in [assignment.ipynb](../assignment.ipynb). The heatmap displays four factors, while the feature-selection calculation uses all 16 candidates. The static map uses geographic coordinates with an approximate display aspect and the existing boundaries.
 
-This version is an **executed notebook**. PDF export and verification of a two-page layout are deferred.
+The [PDF](code_sample.pdf) is a condensed, two-page US Letter version with 9-point code, computed tables, and the county map. It retains both functions and the same analytical results; the separate correlation heatmap remains in the notebook. Both PDF pages were rendered and visually checked. [pdf_source.py](pdf_source.py) is the complete executable source printed in the PDF.
 
 ## Saved files
 
 | File | Purpose |
 |---|---|
+| [code_sample.pdf](code_sample.pdf) | Two-page code, comments, results, and map |
+| [pdf_source.py](pdf_source.py) | Condensed executable source printed in the PDF |
+| [pdf_preview/verification.json](pdf_preview/verification.json) | PDF page, font, and numerical checks |
 | [code_sample.ipynb](code_sample.ipynb) | Executed code, explanations, tables, and figures |
 | [code_sample.py](code_sample.py) | Matching standalone analysis source |
 | [fig_correlations.png](fig_correlations.png) | Correlations for four factors and both outcomes |
@@ -65,3 +68,12 @@ If editing the script, rebuild the notebook with the retained explanatory text, 
 python code_sample/_validation/build_notebook.py
 python code_sample/_validation/execute_and_verify.py
 ```
+
+To regenerate the PDF and page previews, install the export dependencies and run:
+
+```sh
+python -m pip install reportlab pymupdf pygments
+python code_sample/_validation/export_pdf.py
+```
+
+The exporter executes `pdf_source.py`, checks its unrounded tables and county assignments against the saved analysis, creates the two-page PDF, and renders both pages into `pdf_preview/` for inspection.
