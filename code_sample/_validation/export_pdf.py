@@ -35,7 +35,7 @@ for section in sections:
     captured = io.StringIO()
     with contextlib.redirect_stdout(captured):
         exec(compile(section, str(OUT / 'pdf_source.py'), 'exec'), namespace)
-    outputs.append(captured.getvalue().strip())
+    outputs.append('\n'.join(row.rstrip() for row in captured.getvalue().strip().splitlines()))
 (PREVIEW / 'executed_output.txt').write_text('\n\n'.join(outputs) + '\n')
 
 # Compare unrounded results, so compact printing cannot hide a changed analysis.
