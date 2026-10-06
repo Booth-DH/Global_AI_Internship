@@ -14,11 +14,12 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'code_sample'
 TITLE = "Donghang Zou's UChicago ADS Code Sample"
 ABSTRACT = (
+    'This sample is an excerpt from my Global AI internship project; the full code and analysis are available at the GitHub link above. '
     'Chronic disease burden varies across U.S. counties, and its social correlates can guide public health resources. '
-    'The full project combines CDC PLACES 2021 to 2025 with CDC SVI 2020 and 2022, cleans and stacks a county panel, '
-    'measures social and behavioral associations with diabetes and hypertension, and maps K-means profiles. '
+    'The project joins CDC PLACES 2021 to 2025 with CDC SVI 2020 and 2022 in a county panel, '
+    'compares diabetes and hypertension correlates, and maps K-means profiles. '
     'Food, housing, and transportation insecurity are the strongest diabetes correlates (r of 0.937, 0.921, and 0.914). '
-    'This short excerpt shows the pipeline on the latest snapshot; the full code and analysis are in the GitHub repository linked above.'
+    'The code below uses the latest snapshot.'
 )
 
 CAPTION = (
@@ -26,9 +27,10 @@ CAPTION = (
     'and KY/PA missing diabetes and hypertension. Nine CT planning regions lack cached geometry.'
 )
 FINDINGS = (
-    'Sampling affects associations; higher-burden profiles cluster in the Deep South. '
-    'Social-needs measures track disease burden and could help prioritize county follow-up, '
-    'but this is descriptive, not causal: measurement years differ and profiles overlap.'
+    'Social-needs factors remain the strongest diabetes correlates across the same 2,299 counties; inactivity weakens. '
+    'Higher-burden profiles cluster in the Deep South. '
+    'These associations could prioritize county follow-up, but are descriptive, not causal: '
+    'measurement years differ and profiles overlap.'
 )
 
 NOTES = {
@@ -37,7 +39,7 @@ NOTES = {
         'Pearson r measures association; pairwise uses available counties, while common holds the sample fixed.'),
     'Drawing the associations': ('', ''),
     'Grouping county profiles': ('5. Grouping and mapping counties',
-        'Clustering groups counties with similar disease and vulnerability profiles.'),
+        'Clustering groups counties by standardized disease and vulnerability profiles so units do not determine distance.'),
     'Mapping the profiles': ('', ''),
 }
 
@@ -81,9 +83,11 @@ for actual, saved in [('r_pair', 'r_pairwise'), ('n_pair', 'n_pairwise'),
                       ('r_common', 'r_common'), ('n_common', 'n_common')]:
     assert np.allclose(comparison[actual], sampling.loc[shown, saved], atol=1e-12, rtol=0)
 assert np.allclose(correlations, latest[factors + outcomes].corr().loc[factors, outcomes], atol=1e-12, rtol=0)
+assert common.n.eq(2299).all()
+assert common.r.nlargest(3).index.tolist() == ['FOODINSECU', 'HOUSINSECU', 'LACKTRPT']
 assert len(features) == 16 and len(counties) == 2956 and len(complete) == 2299
 assert summary['counties'].tolist() == [765, 788, 508, 238]
-assert round(silhouette_score(scaled, model.labels_), 3) == .203
+assert round(metrics.silhouette_score(scaled, model.labels_), 3) == .203
 assert not places.loc[places.stateabbr.isin(['CO','FL','OR','SD','TN','TX','VT','WA','WY'])].measureid.isin(
     ['FOODINSECU','HOUSINSECU','LACKTRPT','LONELINESS']).any()
 for state in ['KY', 'PA']:

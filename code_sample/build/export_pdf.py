@@ -25,7 +25,7 @@ c = canvas.Canvas(str(PDF), pagesize=(612, 792), pageCompression=1)
 c.setTitle(TITLE)
 c.setAuthor('Donghang Zou')
 MARGIN, WIDTH, FIGURE_WIDTH = 28, 556, 403.2
-FONT, LEADING = 8.0, 8.0
+FONT, LEADING = 8.0, 9.5
 INK = '#213b4a'
 positions = []
 printed_code = []
@@ -54,8 +54,8 @@ def paragraph(value, x, y, width, size=8.5, leading=9.5):
 
 
 def heading(value, x, y):
-    text(value, x, y - 3, size=10.4, color='#135c70')
-    return y - 16
+    text(value, x, y - 8, size=10.4, color='#135c70')
+    return y - 21
 
 
 def code(value, x, y, width):
@@ -93,7 +93,7 @@ def output(value, x, y, width):
         assert stringWidth(row.rstrip(), 'Courier', 8) <= width, row
         text(row.rstrip(), x, y - 4, 8, 'Courier')
         y -= 8.5
-    return y - 8
+    return y - 12
 
 
 def figure(name, x, y, width):
@@ -125,8 +125,7 @@ y = heading('4. Measuring associations', x, y)
 y = paragraph(NOTES['Measuring associations'][1], x, y, WIDTH)
 y = code(CELLS['Measuring associations'].source, x, y, WIDTH)
 y = output(stream(CELLS['Measuring associations']), x, y - 2, WIDTH)
-plot_definition, plot_call = CELLS['Drawing the associations'].source.split('figure = ', 1)
-y = code(plot_definition + '\nfigure = ' + plot_call, x, y, WIDTH)
+y = code(CELLS['Drawing the associations'].source, x, y, WIDTH)
 positions.append(('page1', y))
 footer(1)
 c.showPage()
@@ -138,7 +137,7 @@ y = paragraph(NOTES['Grouping county profiles'][1], x, y, WIDTH)
 y = code(CELLS['Grouping county profiles'].source, x, y, WIDTH)
 y = output(stream(CELLS['Grouping county profiles']), x, y - 2, WIDTH)
 y = code(CELLS['Mapping the profiles'].source, x, y, WIDTH)
-y = figure('fig_risk_tier_map.png', (612 - FIGURE_WIDTH) / 2, y - 2, FIGURE_WIDTH)
+y = figure('fig_risk_tier_map.png', (612 - FIGURE_WIDTH) / 2, y, FIGURE_WIDTH)
 y = paragraph(CAPTION, x, y - 3, WIDTH)
 y = heading('6. Findings and limits', x, y)
 y = paragraph(FINDINGS, x, y, WIDTH)
@@ -174,6 +173,7 @@ for i, page in enumerate(pymupdf.open(PDF), 1):
 assert font_min >= 8
 (PREVIEW / 'verification.json').write_text(json.dumps({
     'pages': 2, 'page_size': 'US Letter', 'minimum_code_font_pt': font_min,
+    'code_leading_pt': LEADING, 'heading_space_above_pt': 8,
     'github_url_count': 1, 'title_count': 1, 'plotting_functions_visible': True, 'single_column': True, 'map_legend_font_pt': 9,
     'figure_width_pt': FIGURE_WIDTH, 'script_notebook_pdf_code_match': True, 'bottom_positions': positions}, indent=2) + '\n')
 print(f'Saved {PDF}')
