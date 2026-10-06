@@ -1,91 +1,80 @@
-# Chronic Disease Burden & Social Determinants of Health
-**Population Health Management | Python · K-Means Clustering · Geospatial Mapping**
+# County Health and Social Vulnerability
+**Donghang Zou · Global AI Internship**
 
-This project identifies at-risk U.S. counties by merging the CDC PLACES dataset with the CDC Social Vulnerability Index (SVI), then applying unsupervised clustering to segment counties into four actionable risk tiers.
+How do social conditions accompany diabetes and hypertension across U.S. counties, and what patterns emerge when counties are grouped by disease burden and vulnerability? This project brings together CDC PLACES and the CDC Social Vulnerability Index (SVI) to explore those questions through data preparation, correlation analysis, clustering, and maps.
 
----
+Start with [the full analysis notebook](assignment.ipynb) for the step-by-step investigation, or [the executed code sample](code_sample/code_sample.ipynb) for a compact walkthrough of the latest snapshot. Both include explanations and computed output. The [sample notes](code_sample/README.md) describe its scope and how to reproduce it.
 
-## Project Overview
+## Data and approach
 
-| Step | Description |
-|------|-------------|
-| Data Merge | CDC PLACES (2023) + SVI (2022) joined on FIPS county code |
-| Correlation Analysis | Pearson r between SDOH factors and diabetes/hypertension rates (2019–2023) |
-| Choropleth Map | Interactive map of diabetes prevalence overlaid with SVI scores |
-| K-Means Clustering | Counties segmented into Low / Moderate / High / Critical risk tiers |
+| Input | Use in the analysis |
+|---|---|
+| CDC PLACES releases 2021–2025 | County estimates of chronic disease, health behaviors, access, and social needs |
+| CDC/ATSDR SVI 2020 and 2022 | Overall social vulnerability and four theme rankings |
+| Cached county GeoJSON | County boundaries for interactive and static maps |
 
----
+The full notebook stacks five release snapshots into a 15,341-row county panel. Its 2019–2023 snapshot labels refer to each release's newest measurement year, rather than the year of every variable. SVI 2020 is paired with releases 2021–2022 and SVI 2022 with releases 2023–2025. The latest cross-section uses the **2025 PLACES release**, with disease outcomes from 2023, some measures from 2022, and SVI 2022. The cached 2020 PLACES file is examined during exploration but excluded from the FIPS join because it lacks county identifiers.
 
-## Data Sources
+Preparation preserves five-character FIPS identifiers, removes national aggregates, retains suppressed estimates as missing, replaces SVI's −999 placeholders, and checks one-to-one county joins. Age-adjusted prevalence is preferred to reduce differences arising from county age structures. The full notebook records measurement years and audits coverage before interpreting results.
 
-| Dataset | Source | Coverage |
-|---------|--------|----------|
-| CDC PLACES | CDC Socrata API | ~3,000 U.S. counties, 45 health measures, 2019–2023 |
-| CDC Social Vulnerability Index (SVI) | CDC/ATSDR Socrata API | ~3,143 counties, 158 variables, 2020 & 2022 snapshots |
+Pearson correlations are calculated for diabetes and hypertension. A reusable sampling comparison then asks how those associations change when every factor is evaluated on the same counties. For clustering, both outcomes and factors with mean absolute correlation of at least 0.40 across the two outcomes are standardized before fitting K-Means. Four profiles are ordered using their standardized diabetes, hypertension, and overall SVI centers.
 
-Raw data is downloaded automatically by the notebook on first run and cached in `raw_data/`.
+## Findings from the latest snapshot
 
----
+There are **2,956 counties** with both disease outcomes and overall SVI. Food insecurity, housing insecurity, and transportation barriers have the strongest positive associations with diabetes among the factors examined: **r = 0.937, 0.921, and 0.914**, respectively, each using 2,299 counties.
 
-## Repository Structure
+Physical inactivity illustrates why the sample matters: its diabetes correlation is **0.873 across 2,956 counties**, falling to **0.850 on the common 2,299-county sample** used by these four factors. The ordering remains the same, but the comparison shows how geographic coverage affects the magnitudes.
 
-```
-.
-├── assignment.ipynb        # Main analysis notebook
-├── raw_data/               # Downloaded source files (PLACES + SVI CSVs)
-├── processed_data/         # Cleaned & merged data
-│   ├── panel_county_health.csv   # 5-year panel (2019–2023), ~15k rows
-│   └── us_counties.geojson       # County boundary geometries
-└── results/                # All outputs
-    ├── clustered_counties_2023.csv   # County-level cluster assignments
-    ├── fig1_sdoh_trend.png           # SDOH correlation trends 2019–2023
-    ├── fig2_2019_vs_2023.png         # Endpoint comparison
-    ├── fig3_heatmap_2023.png         # SDOH × disease correlation heatmap
-    ├── fig4_top_correlates_2023.png  # Ranked SDOH factors (2023)
-    ├── fig5_diabetes_svi_map.html    # Interactive choropleth (diabetes + SVI)
-    ├── fig6_kmeans_validation.png    # Elbow & silhouette plots
-    ├── fig7_cluster_profiles.png     # Risk tier feature heatmap
-    ├── fig8_cluster_distributions.png# Box plots by risk tier
-    └── fig9_risk_tier_map.html       # Interactive county risk tier map
-```
+The 16-feature clustering retains **2,299 counties**, with the following unweighted county means:
 
----
+| Profile | Counties | Diabetes (%) | Hypertension (%) | Overall SVI |
+|---|---:|---:|---:|---:|
+| Low | 765 | 9.09 | 29.76 | 0.190 |
+| Moderate | 788 | 10.77 | 33.31 | 0.456 |
+| High | 508 | 12.55 | 36.75 | 0.754 |
+| Critical | 238 | 15.79 | 42.94 | 0.895 |
 
-## Key Findings
+Higher-burden profiles concentrate in the Deep South. The four-profile solution has a silhouette score of **0.203**, indicating substantial overlap; the notebook's K search gives a higher score for two clusters. Four groups provide descriptive detail, without establishing four naturally separate or clinically validated risk categories.
 
-- **Food insecurity, housing insecurity, and lack of transportation** are the strongest SDOH correlates of diabetes (r ≈ 0.87–0.89) at the county level.
-- **Physical inactivity** is the strongest correlate available across all years (r ≈ 0.84–0.88).
-- K-Means (K=4) identifies four well-separated risk tiers:
+![County profiles from the latest snapshot](code_sample/fig_risk_tier_map.png)
 
-| Risk Tier | Counties | Diabetes Rate | SVI Score |
-|-----------|----------|---------------|-----------|
-| Low | 765 (33%) | 9.1% | 0.19 |
-| Moderate | 788 (34%) | 10.8% | 0.46 |
-| High | 508 (22%) | 12.6% | 0.75 |
-| Critical | 238 (10%) | 15.8% | 0.90 |
+Complete-case filtering excludes **657 counties (22.2%) across nine states** represented in the latest snapshot. Grey map areas have no matched profile. The static view excludes Alaska, Hawaii, and Puerto Rico; nine clustered Connecticut planning regions also lack matching geometry in the cached boundary file.
 
----
+These are county-level associations, not causal effects or individual risk estimates. Each county receives equal weight, so the summaries are not national prevalence estimates. Different measurement years, changing coverage, and the underlying small-area estimation methods also limit comparisons across releases.
 
-## Setup & Usage
+## Repository guide
 
-### Requirements
-```
-pip install pandas numpy matplotlib seaborn folium scikit-learn scipy requests branca
+| Location | Contents |
+|---|---|
+| [assignment.ipynb](assignment.ipynb) | Full exploration, preparation, coverage checks, correlations, and clustering |
+| [raw_data/](raw_data/) | Cached PLACES and SVI source CSVs |
+| [processed_data/](processed_data/) | Merged panel, measurement-year provenance, and county boundaries |
+| [results/](results/) | Full-analysis figures, county assignments, coverage tables, and interactive maps |
+| [code_sample/](code_sample/) | Executed excerpt, matching Python script, static figures, result tables, and verification records |
+| [ProgressReport/](ProgressReport/) | Historical internship progress reports and final write-up |
+
+The interactive [diabetes/SVI map](results/fig5_diabetes_svi_map.html) and [county-profile map](results/fig9_risk_tier_map.html) can be opened locally in a browser. Older output filenames ending in `2023` refer to the latest snapshot label, corresponding to the 2025 release.
+
+## Reproduce the analysis
+
+Use a Python environment with the following packages:
+
+```sh
+python -m pip install pandas numpy matplotlib seaborn scikit-learn scipy requests folium branca jupyter nbformat nbclient ipykernel
 ```
 
-### Running the Notebook
-Open `assignment.ipynb` in Jupyter and run all cells top to bottom. The notebook will:
-1. Download and cache raw data (skip if already present)
-2. Clean, merge, and build the 5-year panel
-3. Generate all figures and maps into `results/`
+Open `assignment.ipynb` with that environment and run all cells from the repository root. Source CSVs and county boundaries are already cached. Running the full notebook regenerates the processed panel and files in `results/`.
 
-> The two interactive HTML maps (`fig5`, `fig9`) can be opened directly in any browser.
+To run only the compact latest-snapshot analysis, which writes into `code_sample/`, use:
 
----
+```sh
+python code_sample/code_sample.py
+```
 
-## Skills Demonstrated
-- Data wrangling across multi-year, multi-schema public health datasets
-- Ecological correlation analysis (Pearson r, 5-year trend)
-- Interactive geospatial visualization with Folium
-- Unsupervised machine learning (K-Means, elbow method, silhouette scoring)
-- Population health risk stratification for SDOH-informed intervention
+To execute the excerpt notebook in a fresh kernel and verify its results against the full analysis:
+
+```sh
+python code_sample/_validation/execute_and_verify.py
+```
+
+The verification checks correlations, feature selection, county profiles, and the silhouette score against the saved analysis, then checks hashes of the original notebook and data/output files. See [the sample notes](code_sample/README.md) for the tested environment and saved artifacts.

@@ -1,0 +1,8 @@
+.ipynb_checkpoints/
+__pycache__/
+_validation/mpl/
+_validation/ipython/
+_validation/runtime/
+_validation/cache/
+_validation/kernels/
+_validation/sample.failed.ipynb
