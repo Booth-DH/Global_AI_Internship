@@ -12,7 +12,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from build_notebook import ROOT, OUT, TITLE, ABSTRACT, CAPTION, FINDINGS, NOTES, CLUSTER_NOTE
+from build_notebook import ROOT, OUT, TITLE, ABSTRACT, CAPTION, FINDINGS, NOTES
 
 NB = nbformat.read(OUT / 'code_sample.ipynb', as_version=4)
 CELLS = {c.metadata.get('section', 'Imports'): c for c in NB.cells if c.cell_type == 'code'}
@@ -24,8 +24,8 @@ PDF = OUT / 'code_sample.pdf'
 c = canvas.Canvas(str(PDF), pagesize=(612, 792), pageCompression=1)
 c.setTitle(TITLE)
 c.setAuthor('Donghang Zou')
-MARGIN, WIDTH, FIGURE_WIDTH = 28, 556, 390
-FONT, LEADING = 8.0, 8.6
+MARGIN, WIDTH, FIGURE_WIDTH = 28, 556, 403.2
+FONT, LEADING = 8.5, 9.0
 INK = '#213b4a'
 positions = []
 printed_code = []
@@ -86,13 +86,13 @@ def stream(cell):
 
 def output(value, x, y, width):
     rows = value.splitlines()
-    height = len(rows) * 8.5 + 8
+    height = len(rows) * LEADING + 8
     c.setFillColor(HexColor('#f0f4f6'))
     c.roundRect(x - 4, y - height + 5, width + 8, height, 3, fill=1, stroke=0)
     for row in rows:
-        assert stringWidth(row.rstrip(), 'Courier', 8) <= width, row
-        text(row.rstrip(), x, y - 4, 8, 'Courier')
-        y -= 8.5
+        assert stringWidth(row.rstrip(), 'Courier', FONT) <= width, row
+        text(row.rstrip(), x, y - 4, FONT, 'Courier')
+        y -= LEADING
     return y - 10
 
 
@@ -125,12 +125,14 @@ y = heading('4. Measuring associations', x, y)
 y = paragraph(NOTES['Measuring associations'][1], x, y, WIDTH)
 y = code(CELLS['Measuring associations'].source, x, y, WIDTH)
 y = output(stream(CELLS['Measuring associations']), x, y - 2, WIDTH)
-y = code(CELLS['Drawing the associations'].source, x, y, WIDTH)
+plot_definition, plot_call = CELLS['Drawing the associations'].source.split('figure = ', 1)
+y = code(plot_definition, x, y, WIDTH)
 positions.append(('page1', y))
 footer(1)
 c.showPage()
 
 x, y = MARGIN, 765
+y = code('figure = ' + plot_call, x, y, WIDTH)
 y = figure('fig_correlations.png', (612 - FIGURE_WIDTH) / 2, y - 2, FIGURE_WIDTH)
 y = heading('5. Grouping and mapping counties', x, y)
 y = paragraph(NOTES['Grouping county profiles'][1], x, y, WIDTH)
@@ -170,7 +172,7 @@ for i, page in enumerate(pymupdf.open(PDF), 1):
                 x0, y0, x1, y1 = span['bbox']
                 assert x0 >= 20 and y0 >= 0 and x1 <= 592 and y1 <= 792, span
     page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).save(PREVIEW / f'page-{i}.png')
-assert font_min >= 8
+assert font_min >= FONT
 (PREVIEW / 'verification.json').write_text(json.dumps({
     'pages': 2, 'page_size': 'US Letter', 'minimum_code_font_pt': font_min,
     'code_leading_pt': LEADING, 'heading_space_above_pt': 8,

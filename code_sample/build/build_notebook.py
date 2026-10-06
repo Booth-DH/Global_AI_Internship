@@ -15,32 +15,29 @@ OUT = ROOT / 'code_sample'
 TITLE = "Donghang Zou's UChicago ADS Code Sample"
 ABSTRACT = (
     'This sample is an excerpt from my Global AI internship project; the full code and analysis are available at the GitHub link above. '
-    'Chronic disease burden varies across U.S. counties, and its social correlates can guide public health resources. '
-    'The project joins CDC PLACES 2021 to 2025 with CDC SVI 2020 and 2022 in a county panel, '
-    'compares diabetes and hypertension correlates, and maps K-means profiles. '
-    'Food, housing, and transportation insecurity are the strongest diabetes correlates (r of 0.937, 0.921, and 0.914).'
-   
+    'Uneven county disease burden makes social conditions relevant to public health planning. '
+    'The project combines CDC PLACES 2021 to 2025 and SVI 2020/2022 into a panel, compares diabetes and hypertension correlates, '
+    'and maps K-means profiles; this excerpt uses PLACES 2025 and SVI 2022. '
+    'Among 16 tested factors, food, housing and transportation insecurity correlate most strongly with diabetes (r = 0.937, 0.921, 0.914).'
 )
 
 CAPTION = (
-    'Grey marks nine states without social-needs measures (CO, FL, OR, SD, TN, TX, VT, WA, WY), KY and PA '
-    'without diabetes or hypertension estimates, and nine CT planning regions without cached geometry.'
+    'Grey: missing social-needs measures in CO, FL, OR, SD, TN, TX, VT, WA and WY; disease estimates in KY/PA; or unmatched boundaries. '
+    'Nine CT planning regions lack matching geometry.'
 )
-CLUSTER_NOTE = 'Unweighted county means: prevalence (%), SVI percentile rank (0 to 1).'
 FINDINGS = (
-    'On the same 2,299 counties, social-needs factors stay the strongest diabetes correlates while inactivity weakens, '
-    'and higher-burden profiles cluster in the Deep South. These patterns could help prioritize county follow-up, '
-    'but they are descriptive, not causal: PLACES values are model-based estimates with shared demographic inputs '
-    'that can inflate correlations, measurement years differ, and profiles overlap.'
+    'On 2,299 common counties, social-needs correlations stay strongest; inactivity weakens. '
+    'Higher-burden profiles cluster in the Deep South. These descriptive, noncausal patterns could guide follow-up, '
+    'but years differ, profiles overlap, and shared PLACES model inputs may inflate correlations.'
 )
 
 NOTES = {
     'Building the county snapshot': ('3. Building the county snapshot', ''),
     'Measuring associations': ('4. Measuring associations',
-        'Pairwise r uses every available county; the common sample holds counties fixed across factors.'),
+        'Pairwise Pearson r uses available observations; the common sample fixes the same counties for all 16 factors.'),
     'Drawing the associations': ('', ''),
     'Grouping county profiles': ('5. Grouping and mapping counties',
-        'K-means groups counties with similar standardized profiles; the table shows unweighted county means (prevalence %, SVI rank).'),
+        'Standardize before K-means so units do not drive distance. Means are unweighted (age-adjusted prevalence %, SVI percentile rank 0 to 1).'),
     'Mapping the profiles': ('', ''),
 }
 
@@ -94,6 +91,13 @@ assert not places.loc[places.stateabbr.isin(['CO','FL','OR','SD','TN','TX','VT',
 for state in ['KY', 'PA']:
     measures = set(places.loc[places.stateabbr.eq(state)].measureid)
     assert len(measures) == 5 and not measures.intersection(outcomes)
+boundaries = gpd.read_file(ROOT / 'data/processed/us_counties.geojson')
+boundaries = boundaries.set_index(boundaries.STATE + boundaries.COUNTY)
+contiguous = boundaries.loc[~boundaries.STATE.isin(['02', '15', '72'])]
+mapped = contiguous.join(complete.tier, validate='one_to_one')
+assert mapped.tier.notna().sum() == 2255
+assert len(complete.index[complete.index.str.startswith('09')].difference(boundaries.index)) == 9
+assert len(boundaries.loc[boundaries.STATE.eq('09')]) == 8
 summary.to_csv(OUT / 'tables/cluster_summary.csv')
 comparison.to_csv(OUT / 'tables/correlation_summary.csv')
 print('Verified both outcomes, sampling comparison, all county profiles, and silhouette.')
