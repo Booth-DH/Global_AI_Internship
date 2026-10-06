@@ -14,34 +14,30 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'code_sample'
 TITLE = "Donghang Zou's UChicago ADS Code Sample"
 ABSTRACT = (
-    'County social conditions help identify where chronic disease and unmet needs coincide. '
-    'The larger project uses five CDC PLACES releases from 2021 to 2025 and CDC SVI 2020 and 2022. '
-    'It cleans and stacks a county panel, correlates social and behavioral factors with diabetes and '
-    'hypertension, and maps K-means profiles. This excerpt rebuilds the latest snapshot from raw CSVs; '
-    'the full project is on GitHub, linked in the first code line. '
-    'Food, housing, and transportation insecurity are the strongest diabetes correlates '
-    '(r = 0.937, 0.921, and 0.914).'
+    'Chronic disease burden varies across U.S. counties, and its social correlates can guide public health resources. '
+    'The full project combines CDC PLACES 2021 to 2025 with CDC SVI 2020 and 2022, cleans and stacks a county panel, '
+    'measures social and behavioral associations with diabetes and hypertension, and maps K-means profiles. '
+    'Food, housing, and transportation insecurity are the strongest diabetes correlates (r of 0.937, 0.921, and 0.914). '
+    'This short excerpt shows the pipeline on the latest snapshot; the full code and analysis are in the GitHub repository linked above.'
 )
+
 CAPTION = (
-    'Grey includes 657 eligible counties in CO, FL, OR, SD, TN, TX, VT, WA, and WY missing social-needs '
-    'measures, plus KY and PA, which lack diabetes and hypertension estimates. '
-    'Nine CT planning regions lack cached geometry.'
+    'Grey marks nine states missing social-needs measures (CO, FL, OR, SD, TN, TX, VT, WA, WY) '
+    'and KY/PA missing diabetes and hypertension. Nine CT planning regions lack cached geometry.'
 )
 FINDINGS = (
-    'The social-needs associations exceed physical inactivity, whose diabetes r changes from 0.873 '
-    'on 2,956 counties to 0.850 on the 2,299-county common sample. Higher-burden profiles concentrate '
-    'in the Deep South. These associations are not causal, and measurement years differ '
-    '(PLACES 2022/2023 and SVI 2022). Profiles are descriptive and overlapping (silhouette 0.203).'
+    'Sampling affects associations; higher-burden profiles cluster in the Deep South. '
+    'Social-needs measures track disease burden and could help prioritize county follow-up, '
+    'but this is descriptive, not causal: measurement years differ and profiles overlap.'
 )
+
 NOTES = {
-    'Loading and typing the data': ('2. Loading and typing the data', ''),
-    'Building the county snapshot': ('3. Building the county snapshot',
-                                     'Age-adjusted measures form one row per county.'),
+    'Building the county snapshot': ('3. Building the county snapshot', ''),
     'Measuring associations': ('4. Measuring associations',
-        'The table compares diabetes samples; the chart ranks all 16 factors for both outcomes.'),
+        'Pearson r measures association; pairwise uses available counties, while common holds the sample fixed.'),
     'Drawing the associations': ('', ''),
     'Grouping county profiles': ('5. Grouping and mapping counties',
-        'Mean absolute r selects factors; profile means are unweighted disease percentages and SVI ranks.'),
+        'Clustering groups counties with similar disease and vulnerability profiles.'),
     'Mapping the profiles': ('', ''),
 }
 
@@ -49,8 +45,15 @@ NOTES = {
 def build():
     parts = re.split(r'^# %% (.+)\n', (OUT / 'code_sample.py').read_text(), flags=re.M)
     nb = nbformat.v4.new_notebook()
-    nb.cells = [nbformat.v4.new_markdown_cell('# ' + TITLE + '\n\n### 1. Motivation and data\n\n' + ABSTRACT),
-                nbformat.v4.new_code_cell(parts[0].strip())]
+    first_line, setup = parts[0].split('\n', 1)
+    url_cell = nbformat.v4.new_code_cell(first_line)
+    url_cell.metadata['section'] = 'Repository link'
+    setup_cell = nbformat.v4.new_code_cell(setup.strip())
+    setup_cell.metadata['section'] = 'Setup and loading the data'
+    nb.cells = [nbformat.v4.new_markdown_cell('# ' + TITLE), url_cell,
+                nbformat.v4.new_markdown_cell('### 1. Motivation and data\n\n' + ABSTRACT),
+                nbformat.v4.new_markdown_cell('### 2. Setup and loading the data'), setup_cell]
+
     for title, body in zip(parts[1::2], parts[2::2]):
         heading, note = NOTES[title]
         if heading:
@@ -77,15 +80,16 @@ sampling = pd.read_csv(ROOT / 'outputs/tables/correlation_sampling_comparison.cs
 for actual, saved in [('r_pair', 'r_pairwise'), ('n_pair', 'n_pairwise'),
                       ('r_common', 'r_common'), ('n_common', 'n_common')]:
     assert np.allclose(comparison[actual], sampling.loc[shown, saved], atol=1e-12, rtol=0)
-assert np.allclose(r, latest[factors + yvars].corr().loc[factors, yvars], atol=1e-12, rtol=0)
+assert np.allclose(correlations, latest[factors + outcomes].corr().loc[factors, outcomes], atol=1e-12, rtol=0)
 assert len(features) == 16 and len(counties) == 2956 and len(complete) == 2299
 assert summary['counties'].tolist() == [765, 788, 508, 238]
-assert round(silhouette_score(z, model.labels_), 3) == .203
-assert not p.loc[p.stateabbr.isin(['CO','FL','OR','SD','TN','TX','VT','WA','WY'])].measureid.isin(
+assert round(silhouette_score(scaled, model.labels_), 3) == .203
+assert not places.loc[places.stateabbr.isin(['CO','FL','OR','SD','TN','TX','VT','WA','WY'])].measureid.isin(
     ['FOODINSECU','HOUSINSECU','LACKTRPT','LONELINESS']).any()
 for state in ['KY', 'PA']:
-    measures = set(p.loc[p.stateabbr.eq(state)].measureid)
-    assert len(measures) == 5 and not measures.intersection(yvars)
+    measures = set(places.loc[places.stateabbr.eq(state)].measureid)
+    assert len(measures) == 5 and not measures.intersection(outcomes)
+summary.to_csv(OUT / 'tables/cluster_summary.csv')
 print('Verified both outcomes, sampling comparison, all county profiles, and silhouette.')
 '''
 

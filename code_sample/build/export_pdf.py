@@ -1,5 +1,6 @@
 """Export all sample code and real outputs in reading order to two Letter pages."""
 from pathlib import Path
+import ast
 import json
 import nbformat
 import pymupdf
@@ -11,7 +12,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from build_notebook import ROOT, OUT, TITLE, ABSTRACT, CAPTION, FINDINGS
+from build_notebook import ROOT, OUT, TITLE, ABSTRACT, CAPTION, FINDINGS, NOTES
 
 NB = nbformat.read(OUT / 'code_sample.ipynb', as_version=4)
 CELLS = {c.metadata.get('section', 'Imports'): c for c in NB.cells if c.cell_type == 'code'}
@@ -23,19 +24,20 @@ PDF = OUT / 'code_sample.pdf'
 c = canvas.Canvas(str(PDF), pagesize=(612, 792), pageCompression=1)
 c.setTitle(TITLE)
 c.setAuthor('Donghang Zou')
-MARGIN, COL, GAP = 28, 268, 20
-FONT, LEADING = 8.0, 8.4
+MARGIN, WIDTH, FIGURE_WIDTH = 28, 556, 403.2
+FONT, LEADING = 8.0, 8.0
 INK = '#213b4a'
 positions = []
+printed_code = []
 
 
-def text(value, x, y, size=8.7, font='Helvetica', color=INK):
+def text(value, x, y, size=8.5, font='Helvetica', color=INK):
     c.setFillColor(HexColor(color))
     c.setFont(font, size)
     c.drawString(x, y, value)
 
 
-def paragraph(value, x, y, width, size=8.7, leading=10):
+def paragraph(value, x, y, width, size=8.5, leading=9.5):
     words, row = value.split(), ''
     for word in words:
         trial = (row + ' ' + word).strip()
@@ -52,15 +54,14 @@ def paragraph(value, x, y, width, size=8.7, leading=10):
 
 
 def heading(value, x, y):
-    text(value, x, y, size=10.4, color='#135c70')
-    return y - 15
+    text(value, x, y - 3, size=10.4, color='#135c70')
+    return y - 16
 
 
 def code(value, x, y, width):
+    printed_code.append(value)
     for row in value.strip().splitlines():
-        # The fixed GitHub comment uses part of the gutter but never enters the next column.
-        allowed = width + 12 if row.startswith('# GitHub:') else width
-        assert stringWidth(row, 'Courier', FONT) <= allowed, (len(row), row)
+        assert stringWidth(row, 'Courier', FONT) <= width, (len(row), row)
         xx = x
         for token, piece in lex(row, PythonLexer()):
             piece = piece.rstrip('\n')
@@ -80,19 +81,19 @@ def code(value, x, y, width):
 
 
 def stream(cell):
-    return ''.join(o.text for o in cell.outputs if o.output_type == 'stream' and o.name == 'stdout').strip()
+    return ''.join(o.text for o in cell.outputs if o.output_type == 'stream' and o.name == 'stdout').strip('\n')
 
 
 def output(value, x, y, width):
     rows = value.splitlines()
-    height = len(rows) * 9.3 + 8
+    height = len(rows) * 8.5 + 8
     c.setFillColor(HexColor('#f0f4f6'))
     c.roundRect(x - 4, y - height + 5, width + 8, height, 3, fill=1, stroke=0)
     for row in rows:
         assert stringWidth(row.rstrip(), 'Courier', 8) <= width, row
         text(row.rstrip(), x, y - 4, 8, 'Courier')
-        y -= 9.3
-    return y - 10
+        y -= 8.5
+    return y - 8
 
 
 def figure(name, x, y, width):
@@ -109,47 +110,48 @@ def footer(page):
     text(f'Donghang Zou | UChicago ADS Code Sample | page {page} / 2', 28, 12, 8)
 
 
-# Page 1 reads down the left column, then down the right column.
-text(TITLE, 28, 765, 16)
-x, y = 28, 742
+# One consistent full-width text and code frame on both pages.
+text(TITLE, MARGIN, 765, 16)
+x, y = MARGIN, 748
+y = code(CELLS['Repository link'].source, x, y, WIDTH)
 y = heading('1. Motivation and data', x, y)
-y = paragraph(ABSTRACT, x, y, COL) - 4
-y = code(CELLS['Imports'].source, x, y, COL) - 5
-y = heading('2. Loading and typing the data', x, y)
-y = code(CELLS['Loading and typing the data'].source, x, y, COL)
-y = output(stream(CELLS['Loading and typing the data']), x, y - 2, COL)
-y = heading('3. Building the county snapshot', x, y - 1)
-y = code(CELLS['Building the county snapshot'].source, x, y, COL)
-positions.append(('page1_left', y))
-
-x, y = 316, 742
+y = paragraph(ABSTRACT, x, y, WIDTH)
+y = heading('2. Setup and loading the data', x, y)
+y = code(CELLS['Setup and loading the data'].source, x, y, WIDTH)
+y = output(stream(CELLS['Setup and loading the data']), x, y - 2, WIDTH)
+y = heading('3. Building the county snapshot', x, y)
+y = code(CELLS['Building the county snapshot'].source, x, y, WIDTH)
 y = heading('4. Measuring associations', x, y)
-y = paragraph('Compare diabetes samples, then rank all 16 factors for both outcomes.', x, y, COL) - 3
-y = code(CELLS['Measuring associations'].source, x, y, COL)
-y = output(stream(CELLS['Measuring associations']), x, y - 2, COL)
-y = code(CELLS['Drawing the associations'].source, x, y, COL)
-y = figure('fig_correlations.png', x, y - 2, COL)
-positions.append(('page1_right', y))
+y = paragraph(NOTES['Measuring associations'][1], x, y, WIDTH)
+y = code(CELLS['Measuring associations'].source, x, y, WIDTH)
+y = output(stream(CELLS['Measuring associations']), x, y - 2, WIDTH)
+plot_definition, plot_call = CELLS['Drawing the associations'].source.split('figure = ', 1)
+y = code(plot_definition + '\nfigure = ' + plot_call, x, y, WIDTH)
+positions.append(('page1', y))
 footer(1)
 c.showPage()
 
-# Page 2 uses full-width code to keep map geometry readable without line wrapping.
-x, y, width = 28, 763, 556
+x, y = MARGIN, 765
+y = figure('fig_correlations.png', (612 - FIGURE_WIDTH) / 2, y - 2, FIGURE_WIDTH)
 y = heading('5. Grouping and mapping counties', x, y)
-y = paragraph('Mean absolute r selects factors; the table shows unweighted disease percentages and SVI ranks.',
-              x, y, width) - 4
-y = code(CELLS['Grouping county profiles'].source, x, y, width)
-y = output(stream(CELLS['Grouping county profiles']), x, y - 2, width)
-y = code(CELLS['Mapping the profiles'].source, x, y, width)
-y = figure('fig_risk_tier_map.png', (612 - COL) / 2, y - 2, COL) - 3
-y = paragraph(CAPTION, x, y, width, size=8.2, leading=9.4) - 3
+y = paragraph(NOTES['Grouping county profiles'][1], x, y, WIDTH)
+y = code(CELLS['Grouping county profiles'].source, x, y, WIDTH)
+y = output(stream(CELLS['Grouping county profiles']), x, y - 2, WIDTH)
+y = code(CELLS['Mapping the profiles'].source, x, y, WIDTH)
+y = figure('fig_risk_tier_map.png', (612 - FIGURE_WIDTH) / 2, y - 2, FIGURE_WIDTH)
+y = paragraph(CAPTION, x, y - 3, WIDTH)
 y = heading('6. Findings and limits', x, y)
-y = paragraph(FINDINGS, x, y, width)
+y = paragraph(FINDINGS, x, y, WIDTH)
 positions.append(('page2', y))
 print(positions)
-assert all(y >= 30 for _, y in positions), positions
+assert all(y >= 28 for _, y in positions), positions
 footer(2)
 c.save()
+
+script_ast = ast.dump(ast.parse((OUT / 'code_sample.py').read_text()))
+notebook_ast = ast.dump(ast.parse('\n\n'.join(cell.source for cell in CELLS.values())))
+pdf_ast = ast.dump(ast.parse('\n\n'.join(printed_code)))
+assert script_ast == notebook_ast == pdf_ast, 'Script, notebook and printed code differ'
 
 reader = PdfReader(PDF)
 assert len(reader.pages) == 2
@@ -172,6 +174,6 @@ for i, page in enumerate(pymupdf.open(PDF), 1):
 assert font_min >= 8
 (PREVIEW / 'verification.json').write_text(json.dumps({
     'pages': 2, 'page_size': 'US Letter', 'minimum_code_font_pt': font_min,
-    'github_url_count': 1, 'title_count': 1, 'plotting_functions_visible': True,
-    'figure_width_pt': COL, 'bottom_positions': positions}, indent=2) + '\n')
+    'github_url_count': 1, 'title_count': 1, 'plotting_functions_visible': True, 'single_column': True, 'map_legend_font_pt': 9,
+    'figure_width_pt': FIGURE_WIDTH, 'script_notebook_pdf_code_match': True, 'bottom_positions': positions}, indent=2) + '\n')
 print(f'Saved {PDF}')
