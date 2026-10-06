@@ -15,20 +15,21 @@ OUT = ROOT / 'code_sample'
 TITLE = "Donghang Zou's UChicago ADS Code Sample"
 ABSTRACT = (
     'This sample is an excerpt from my Global AI internship project; the full code and analysis are available at the GitHub link above. '
-    'Uneven county disease burden makes social conditions relevant to public health planning. '
+    'Chronic disease burden is uneven across U.S. counties, so understanding its social correlates can help target public health resources. '
     'The project combines CDC PLACES 2021 to 2025 and SVI 2020/2022 into a panel, compares diabetes and hypertension correlates, '
     'and maps K-means profiles; this excerpt uses PLACES 2025 and SVI 2022. '
     'Among 16 tested factors, food, housing and transportation insecurity correlate most strongly with diabetes (r = 0.937, 0.921, 0.914).'
 )
 
 CAPTION = (
-    'Grey: missing social-needs measures in CO, FL, OR, SD, TN, TX, VT, WA and WY; disease estimates in KY/PA; or unmatched boundaries. '
-    'Nine CT planning regions lack matching geometry.'
+    'Grey: nine states lack social-needs data; KY/PA lack disease estimates; some boundaries are unmatched. '
+    'Nine CT planning regions lack geometry.'
 )
 FINDINGS = (
-    'On 2,299 common counties, social-needs correlations stay strongest; inactivity weakens. '
-    'Higher-burden profiles cluster in the Deep South. These descriptive, noncausal patterns could guide follow-up, '
-    'but years differ, profiles overlap, and shared PLACES model inputs may inflate correlations.'
+    'When all factors use the same 2,299 counties, food, housing, and transportation insecurity remain the strongest correlates, '
+    'while the link with physical inactivity weakens, showing that sample choice affects the size of an association even when the ranking holds. '
+    'Higher-burden profiles cluster in the Deep South. These patterns are descriptive, not causal: measurement years differ, profiles overlap, '
+    'and shared inputs to the PLACES models may inflate correlations.'
 )
 
 NOTES = {

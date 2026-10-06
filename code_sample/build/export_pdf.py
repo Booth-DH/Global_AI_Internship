@@ -54,8 +54,8 @@ def paragraph(value, x, y, width, size=8.5, leading=9.5):
 
 
 def heading(value, x, y):
-    text(value, x, y - 8, size=10.4, color='#135c70')
-    return y - 17
+    text(value, x, y - 4, size=10.4, color='#135c70')
+    return y - 13
 
 
 def code(value, x, y, width):
@@ -118,13 +118,13 @@ y = heading('1. Motivation and data', x, y)
 y = paragraph(ABSTRACT, x, y, WIDTH)
 y = heading('2. Setup and loading the data', x, y)
 y = code(CELLS['Setup and loading the data'].source, x, y, WIDTH)
-y = output(stream(CELLS['Setup and loading the data']), x, y - 2, WIDTH)
+y = output(stream(CELLS['Setup and loading the data']), x, y - 1, WIDTH)
 y = heading('3. Building the county snapshot', x, y)
 y = code(CELLS['Building the county snapshot'].source, x, y, WIDTH)
 y = heading('4. Measuring associations', x, y)
 y = paragraph(NOTES['Measuring associations'][1], x, y, WIDTH)
 y = code(CELLS['Measuring associations'].source, x, y, WIDTH)
-y = output(stream(CELLS['Measuring associations']), x, y - 2, WIDTH)
+y = output(stream(CELLS['Measuring associations']), x, y - 1, WIDTH)
 plot_definition, plot_call = CELLS['Drawing the associations'].source.split('figure = ', 1)
 y = code(plot_definition, x, y, WIDTH)
 positions.append(('page1', y))
@@ -137,7 +137,7 @@ y = figure('fig_correlations.png', (612 - FIGURE_WIDTH) / 2, y - 2, FIGURE_WIDTH
 y = heading('5. Grouping and mapping counties', x, y)
 y = paragraph(NOTES['Grouping county profiles'][1], x, y, WIDTH)
 y = code(CELLS['Grouping county profiles'].source, x, y, WIDTH)
-y = output(stream(CELLS['Grouping county profiles']), x, y - 2, WIDTH)
+y = output(stream(CELLS['Grouping county profiles']), x, y - 1, WIDTH)
 y = code(CELLS['Mapping the profiles'].source, x, y, WIDTH)
 y = figure('fig_risk_tier_map.png', (612 - FIGURE_WIDTH) / 2, y, FIGURE_WIDTH)
 y = paragraph(CAPTION, x, y - 3, WIDTH)
@@ -175,7 +175,7 @@ for i, page in enumerate(pymupdf.open(PDF), 1):
 assert font_min >= FONT
 (PREVIEW / 'verification.json').write_text(json.dumps({
     'pages': 2, 'page_size': 'US Letter', 'minimum_code_font_pt': font_min,
-    'code_leading_pt': LEADING, 'heading_space_above_pt': 8,
+    'code_leading_pt': LEADING, 'heading_space_above_pt': 4,
     'github_url_count': 1, 'title_count': 1, 'plotting_functions_visible': True, 'single_column': True, 'map_legend_font_pt': 9,
     'figure_width_pt': FIGURE_WIDTH, 'script_notebook_pdf_code_match': True, 'bottom_positions': positions}, indent=2) + '\n')
 print(f'Saved {PDF}')
