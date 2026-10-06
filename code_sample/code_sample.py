@@ -1,8 +1,14 @@
 # GitHub: https://github.com/Booth-DH/Global_AI_Internship
-import json, numpy as np, pandas as pd, matplotlib.pyplot as plt
+import json
 from pathlib import Path
-from matplotlib import patches, path
-from sklearn import cluster, preprocessing, metrics
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.patches import PathPatch, Patch
+from matplotlib.path import Path as MplPath
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
 
 ROOT = Path.cwd().parent if Path.cwd().name == 'code_sample' else Path.cwd()
 RAW, OUT = ROOT / 'data/raw', ROOT / 'code_sample'
@@ -34,37 +40,41 @@ counties = prepare_county_snapshot(places, svi)
 
 # %% Measuring associations
 def compare_correlations(data, outcome, factors, sample_policy='pairwise'):
-    rows = data[[outcome, *factors]].dropna(subset=[outcome, *factors] if sample_policy == 'common' else [outcome])
-    return pd.DataFrame({'r': rows[factors].corrwith(rows[outcome]), 'n': rows[factors].count()})
+    values = data[[outcome, *factors]].dropna(subset=[outcome])
+    if sample_policy == 'common':
+        values = values.dropna()
+    return pd.DataFrame({'r': values[factors].corrwith(values[outcome]), 'n': values[factors].count()})
 results = {outcome: compare_correlations(counties, outcome, factors) for outcome in outcomes}
 correlations = pd.DataFrame({outcome: result.r for outcome, result in results.items()})
 shown = ['FOODINSECU', 'HOUSINSECU', 'LACKTRPT', 'LPA']
 common = compare_correlations(counties, 'DIABETES', factors, 'common')
 comparison = results['DIABETES'].join(common, lsuffix='_pair', rsuffix='_common').loc[shown]
-comparison.to_csv(OUT / 'tables/correlation_summary.csv')
 print(comparison.round(3).rename_axis(None))
 
 # %% Drawing the associations
-plt.rcParams.update({'font.size': 9, 'axes.titlesize': 9, 'figure.titlesize': 9})
 def plot_correlations(correlations):
     ranked = correlations.sort_values('DIABETES', ascending=False).rename(index=factor_labels)
-    fig, axes = plt.subplots(1, 2, figsize=(5.6, 1.75))
+    fig, axes = plt.subplots(1, 2, figsize=(5.6, 1.45))
     for ax, start in zip(axes, [0, 8]):
         ranked.iloc[start:start + 8].iloc[::-1].plot.barh(ax=ax, width=.8,
-            color=['#176b87', '#cd743b'], legend=False)
+            color=['#176b87', '#cd743b'], legend=False, fontsize=8)
         ax.set(xlim=(-1, 1), xticks=[-1, 0, 1], xlabel='', ylabel='')
-    fig.suptitle('Correlations with diabetes and hypertension')
-    fig.legend(['Diabetes', 'Hypertension'], loc='upper center', bbox_to_anchor=(.5, .95), ncol=2, frameon=False)
+    fig.suptitle('Correlations with diabetes and hypertension', fontsize=9)
+    fig.legend(axes[0].containers, ['Diabetes', 'Hypertension'], loc='upper center',
+        bbox_to_anchor=(.5, .95), ncol=2, frameon=False, fontsize=9)
     fig.subplots_adjust(left=.25, right=.98, bottom=.17, top=.75, wspace=1.3)
     return fig
-figure = plot_correlations(correlations); figure.savefig(OUT / 'figures/fig_correlations.png', dpi=240); plt.show()
+figure = plot_correlations(correlations)
+figure.savefig(OUT / 'figures/fig_correlations.png', dpi=240)
+plt.show()
 
 # %% Grouping county profiles
 strength = correlations.abs().mean(axis=1).sort_values(ascending=False)
 features = outcomes + strength[strength >= .40].index.tolist()
 complete = counties.dropna(subset=features).copy()
-scaled = preprocessing.StandardScaler().fit_transform(complete[features])
-model = cluster.KMeans(n_clusters=4, random_state=42, n_init=10).fit(scaled)
+# Standardize so measurement units do not drive distances.
+scaled = StandardScaler().fit_transform(complete[features])
+model = KMeans(n_clusters=4, random_state=42, n_init=10).fit(scaled)
 anchors = [features.index(factor) for factor in [*outcomes, 'RPL_THEMES']]
 # Order tiers by mean standardized diabetes, hypertension, and SVI.
 order = np.argsort(model.cluster_centers_[:, anchors].mean(axis=1))
@@ -73,7 +83,7 @@ labels = pd.Series(model.labels_, index=complete.index).map(dict(zip(order, tier
 complete['tier'] = pd.Categorical(labels, categories=tiers, ordered=True)
 summary = complete.groupby('tier', observed=True).agg(counties=('DIABETES', 'size'),
     diabetes=('DIABETES', 'mean'), hypertension=('BPHIGH', 'mean'), SVI=('RPL_THEMES', 'mean'))
-print(f'{len(complete):,} clustered counties; silhouette = {metrics.silhouette_score(scaled, model.labels_):.3f}')
+print(f'{len(complete):,} clustered counties; silhouette = {silhouette_score(scaled, model.labels_):.3f}')
 print(summary.round(3).rename_axis(None).to_string())
 
 # %% Mapping the profiles
@@ -81,17 +91,23 @@ def plot_county_profiles(complete):
     colors = dict(zip([*tiers, 'Not clustered'], ['#27ae60', '#f39c12', '#e67e22', '#c0392b', '#d3d3d3']))
     lookup = complete.tier.astype('string').map(colors).to_dict()
     geo = json.loads((ROOT / 'data/processed/us_counties.geojson').read_text())
-    fig, ax = plt.subplots(figsize=(5.6, 1.9)); ax.axis('off')
+    fig, ax = plt.subplots(figsize=(5.6, 1.8))
+    ax.axis('off')
     visible = [county for county in geo['features'] if county['id'][:2] not in {'02', '15', '72'}]
     for county in visible:
         fips, geometry = county['id'], county['geometry']
         polygons = [geometry['coordinates']] if geometry['type'] == 'Polygon' else geometry['coordinates']
         for polygon in polygons:
-            shape = path.Path.make_compound_path(*[path.Path(ring, closed=True) for ring in polygon])
-            ax.add_patch(patches.PathPatch(shape, facecolor=lookup.get(fips, '#d3d3d3'), edgecolor='w', lw=.12))
-    ax.set(xlim=(-125, -66), ylim=(24, 50), aspect=1.25, title='County profiles')
-    handles = [patches.Patch(color=color, label=tier) for tier, color in colors.items()]
-    fig.legend(handles=handles, loc='lower center', ncol=5, frameon=False, columnspacing=.9, handlelength=1)
+            shape = MplPath.make_compound_path(*[MplPath(ring, closed=True) for ring in polygon])
+            ax.add_patch(PathPatch(shape, facecolor=lookup.get(fips, '#d3d3d3'), edgecolor='w', lw=.12))
+    ax.set(xlim=(-125, -66), ylim=(24, 50), aspect=1.25)
+    ax.set_title('County profiles', fontsize=9)
+    colors['Not clustered (measures unavailable)'] = colors.pop('Not clustered')
+    handles = [Patch(color=color, label=tier) for tier, color in colors.items()]
+    fig.legend(handles=handles, loc='lower center', ncol=5, frameon=False,
+        columnspacing=.9, handlelength=1, fontsize=9)
     fig.subplots_adjust(left=.02, right=.98, top=.88, bottom=.16)
     return fig
-figure = plot_county_profiles(complete); figure.savefig(OUT / 'figures/fig_risk_tier_map.png', dpi=240); plt.show()
+figure = plot_county_profiles(complete)
+figure.savefig(OUT / 'figures/fig_risk_tier_map.png', dpi=240)
+plt.show()

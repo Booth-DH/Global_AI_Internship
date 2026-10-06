@@ -18,28 +18,29 @@ ABSTRACT = (
     'Chronic disease burden varies across U.S. counties, and its social correlates can guide public health resources. '
     'The project joins CDC PLACES 2021 to 2025 with CDC SVI 2020 and 2022 in a county panel, '
     'compares diabetes and hypertension correlates, and maps K-means profiles. '
-    'Food, housing, and transportation insecurity are the strongest diabetes correlates (r of 0.937, 0.921, and 0.914). '
-    'The code below uses the latest snapshot.'
+    'Food, housing, and transportation insecurity are the strongest diabetes correlates (r of 0.937, 0.921, and 0.914).'
+   
 )
 
 CAPTION = (
-    'Grey marks nine states missing social-needs measures (CO, FL, OR, SD, TN, TX, VT, WA, WY) '
-    'and KY/PA missing diabetes and hypertension. Nine CT planning regions lack cached geometry.'
+    'Grey marks nine states without social-needs measures (CO, FL, OR, SD, TN, TX, VT, WA, WY), KY and PA '
+    'without diabetes or hypertension estimates, and nine CT planning regions without cached geometry.'
 )
+CLUSTER_NOTE = 'Unweighted county means: prevalence (%), SVI percentile rank (0 to 1).'
 FINDINGS = (
-    'Social-needs factors remain the strongest diabetes correlates across the same 2,299 counties; inactivity weakens. '
-    'Higher-burden profiles cluster in the Deep South. '
-    'These associations could prioritize county follow-up, but are descriptive, not causal: '
-    'measurement years differ and profiles overlap.'
+    'On the same 2,299 counties, social-needs factors stay the strongest diabetes correlates while inactivity weakens, '
+    'and higher-burden profiles cluster in the Deep South. These patterns could help prioritize county follow-up, '
+    'but they are descriptive, not causal: PLACES values are model-based estimates with shared demographic inputs '
+    'that can inflate correlations, measurement years differ, and profiles overlap.'
 )
 
 NOTES = {
     'Building the county snapshot': ('3. Building the county snapshot', ''),
     'Measuring associations': ('4. Measuring associations',
-        'Pearson r measures association; pairwise uses available counties, while common holds the sample fixed.'),
+        'Pairwise r uses every available county; the common sample holds counties fixed across factors.'),
     'Drawing the associations': ('', ''),
     'Grouping county profiles': ('5. Grouping and mapping counties',
-        'Clustering groups counties by standardized disease and vulnerability profiles so units do not determine distance.'),
+        'K-means groups counties with similar standardized profiles; the table shows unweighted county means (prevalence %, SVI rank).'),
     'Mapping the profiles': ('', ''),
 }
 
@@ -87,13 +88,14 @@ assert common.n.eq(2299).all()
 assert common.r.nlargest(3).index.tolist() == ['FOODINSECU', 'HOUSINSECU', 'LACKTRPT']
 assert len(features) == 16 and len(counties) == 2956 and len(complete) == 2299
 assert summary['counties'].tolist() == [765, 788, 508, 238]
-assert round(metrics.silhouette_score(scaled, model.labels_), 3) == .203
+assert round(silhouette_score(scaled, model.labels_), 3) == .203
 assert not places.loc[places.stateabbr.isin(['CO','FL','OR','SD','TN','TX','VT','WA','WY'])].measureid.isin(
     ['FOODINSECU','HOUSINSECU','LACKTRPT','LONELINESS']).any()
 for state in ['KY', 'PA']:
     measures = set(places.loc[places.stateabbr.eq(state)].measureid)
     assert len(measures) == 5 and not measures.intersection(outcomes)
 summary.to_csv(OUT / 'tables/cluster_summary.csv')
+comparison.to_csv(OUT / 'tables/correlation_summary.csv')
 print('Verified both outcomes, sampling comparison, all county profiles, and silhouette.')
 '''
 

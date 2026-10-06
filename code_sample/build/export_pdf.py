@@ -12,7 +12,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from build_notebook import ROOT, OUT, TITLE, ABSTRACT, CAPTION, FINDINGS, NOTES
+from build_notebook import ROOT, OUT, TITLE, ABSTRACT, CAPTION, FINDINGS, NOTES, CLUSTER_NOTE
 
 NB = nbformat.read(OUT / 'code_sample.ipynb', as_version=4)
 CELLS = {c.metadata.get('section', 'Imports'): c for c in NB.cells if c.cell_type == 'code'}
@@ -24,8 +24,8 @@ PDF = OUT / 'code_sample.pdf'
 c = canvas.Canvas(str(PDF), pagesize=(612, 792), pageCompression=1)
 c.setTitle(TITLE)
 c.setAuthor('Donghang Zou')
-MARGIN, WIDTH, FIGURE_WIDTH = 28, 556, 403.2
-FONT, LEADING = 8.0, 9.5
+MARGIN, WIDTH, FIGURE_WIDTH = 28, 556, 390
+FONT, LEADING = 8.0, 8.6
 INK = '#213b4a'
 positions = []
 printed_code = []
@@ -55,7 +55,7 @@ def paragraph(value, x, y, width, size=8.5, leading=9.5):
 
 def heading(value, x, y):
     text(value, x, y - 8, size=10.4, color='#135c70')
-    return y - 21
+    return y - 17
 
 
 def code(value, x, y, width):
@@ -76,7 +76,7 @@ def code(value, x, y, width):
                 color = '#72558e'
             text(piece, xx, y, FONT, 'Courier', color)
             xx += stringWidth(piece, 'Courier', FONT)
-        y -= LEADING if row else 4
+        y -= LEADING if row else 2
     return y
 
 
@@ -93,7 +93,7 @@ def output(value, x, y, width):
         assert stringWidth(row.rstrip(), 'Courier', 8) <= width, row
         text(row.rstrip(), x, y - 4, 8, 'Courier')
         y -= 8.5
-    return y - 12
+    return y - 10
 
 
 def figure(name, x, y, width):
@@ -111,8 +111,8 @@ def footer(page):
 
 
 # One consistent full-width text and code frame on both pages.
-text(TITLE, MARGIN, 765, 16)
-x, y = MARGIN, 748
+text(TITLE, MARGIN, 768, 16)
+x, y = MARGIN, 755
 y = code(CELLS['Repository link'].source, x, y, WIDTH)
 y = heading('1. Motivation and data', x, y)
 y = paragraph(ABSTRACT, x, y, WIDTH)
